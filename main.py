@@ -5,6 +5,8 @@ from getpass import getpass
 import requests
 from requests import RequestException
 
+from config import ling_user_name, ling_password
+
 
 # Class for fields in Anki with the corresponding attribute at LingQ
 # A list of AnkiField objects is used to store which field was assigned which attribute in select_fields()
@@ -110,7 +112,9 @@ def select_deck():
     print("1- Create a new deck")
     for num, d in enumerate(decks, start=2):
         print(str(num) + "-", d)
-    d = select_item_from_list(len(decks))
+
+    #[DdeR] There is a logic bug here. Needed to add the +1 as the last deck could never be selected    
+    d = select_item_from_list(len(decks) + 1)
     # If the user choose to create a deck, call the create_deck() function
     # and select that deck as the one to add all the LingQs to
     # Otherwise, select the deck the user chose
@@ -143,7 +147,7 @@ def select_model():
 # Receives the username and password of the LingQ account,
 # longs into that account, and retrieves all the LingQs the user has
 # Returning them as a list of dictionaries
-def retrieve_lingqs(username="testingtesting", password="testingtesting"):
+def retrieve_lingqs(username=ling_user_name, password=ling_password):
     print("Connecting to LingQ...")
     # Get the API key for the account
     auth = requests.post("https://www.lingq.com/api/api-token-auth/",
@@ -163,10 +167,13 @@ def retrieve_lingqs(username="testingtesting", password="testingtesting"):
     languages = json.loads(response.text)
 
     # Let the user select which language to import
-    print("Select the language you would like to import:")
+    '''print("Select the language you would like to import:")
     for num, language in enumerate(languages, start=1):
         print(str(num) + "-" + language["title"])
-    language = select_item_from_list(len(languages))
+    #language = select_item_from_list(len(languages))
+    ''' 
+    #[DdeR] Hardcoding language to be Chinese
+    language = 3
 
     # Get all LingQs from that language.
     print("Retrieving all LingQs for", languages[language - 1]["title"])
@@ -255,17 +262,55 @@ def add_notes(deck, fields, lingqs):
 
 LINGQ_ATTRIBUTES = ['term', 'hints', 'fragment', 'notes', 'tags']
 while True:
-    username = input("Enter your LingQ username:\t")
-    password = getpass("Enter your LingQ password:\t")
-    lingqs = retrieve_lingqs(username, password)
+    #[DdeR] Hardcoded my own username and password
+    #username = input("Enter your LingQ username:\t")
+    #password = getpass("Enter your LingQ password:\t")
+    #lingqs = retrieve_lingqs(username, password)
+    
+    #Connect to Lingq API
+    lingqs = retrieve_lingqs()
+
     if not lingqs == 1:
         break
     print("Please try logging in again.\n")
-
+'''
 version = int(send_request("version").text)
 print("Connected to Ankiconnect version", version)
+
+#Iterate through the available decks that currently exist
 deck = select_deck()
+
+#Iterate through the models that exist (will likely want to createa standard model that can be used and then hardcode)
 model = select_model()
+
+
 fields = select_fields(model)
 add_notes(deck, fields, lingqs)
+
 input("\nPress enter to exit...")
+'''
+
+
+'''
+import pinyin
+
+#example schema return from lingq
+{'extended_status': 3,
+ 'fragment': '这 是 全 中国 的 一个 传统 吗 ， 还是 主要 是 广东 人 的 这种 传统 ？',
+ 'hints': [{'id': 22104984,
+            'locale': 'en',
+            'popularity': 124,
+            'text': 'whole, entire, complete'}],
+ 'id': 152424515,
+ 'notes': '',
+ 'status': 3,
+ 'tags': [],
+ 'term': '全',
+ 'word': 855610}
+
+term = df[i]['term']
+text = df[i]['hints'][0]['text']
+fragmet = df[i]['fragment']
+
+'''
+
