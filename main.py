@@ -9,7 +9,7 @@ import pinyin
 
 from config import ling_user_name, ling_password
 
-
+'''
 # Class for fields in Anki with the corresponding attribute at LingQ
 # A list of AnkiField objects is used to store which field was assigned which attribute in select_fields()
 class AnkiField:
@@ -32,8 +32,8 @@ def list_of_dicts_to_string(l, dict_key, c):
         if len(l) > 1 and not num == len(l):
             string = string + c
     return string
-
-
+'''
+'''
 # Takes a list (l) of strings, and combines all items into
 # one long string with c added as a separator between each item and the next
 def list_to_string(l, c):
@@ -43,8 +43,8 @@ def list_to_string(l, c):
         if len(l) > 1 and not num == len(l):
             string = string + c
     return string
-
-
+'''
+'''
 # Gets the selected item's number from the user,
 # makes sure it is a positive integer within the list's bound and returns it
 def select_item_from_list(upper_bound, prompt=""):
@@ -53,8 +53,7 @@ def select_item_from_list(upper_bound, prompt=""):
         print("Please select one of the available options:\t")
         selection = input()
     return int(selection)
-
-
+'''
 # Gets the action and parameters sent to Ankiconnect, and returns it as a dictionary
 # to be sent as a JSON
 def form_request(action, **params):
@@ -67,7 +66,6 @@ def form_request(action, **params):
     else:
         # If yes, send it
         return {'action': action, 'params': params, 'version': version}
-
 
 # sends a request to Ankiconnect containing an action and parameters
 # see all requests available here: https://foosoft.net/projects/anki-connect/index.html#supported-actions
@@ -85,7 +83,6 @@ def send_request(action, **params):
               "installed.")
         input("\nPress enter to exit...")
         exit(1)
-    '''
     if not action == 'version' \
             and not json.loads(r.text)["error"] is None \
             and not json.loads(r.text)["error"] == 'cannot create note because it is a duplicate':
@@ -93,10 +90,9 @@ def send_request(action, **params):
         print("\nPlease fix the error above, make sure Anki is running and your preferred profile is selected.")
         input("\nPress enter to exit...")
         exit(1)
-    '''
     return r
 
-
+'''
 # Creates a new Anki deck and returns its name
 def create_deck():
     name = input("Enter the new deck's name:\t")
@@ -104,11 +100,11 @@ def create_deck():
     send_request("createDeck", deck=name)
     print("Done creating deck")
     return name
+'''
 
-
+'''
 # Allows the user to select which deck to add all the LingQs to
 def select_deck():
-    '''
     # Get all the decks at Anki
     response = send_request("deckNames")
     decks = json.loads(response.text)#["result"]
@@ -130,14 +126,14 @@ def select_deck():
     
     # Return the name of the selected deck
     #return d
-    '''
     #[DdeR] Hard Coding the deck name TODO: Add to configuration file
     return "LingQ"
+'''
 
+'''
 # Allows the user to select which model to add all the LingQs with
 # returns that model's name
 def select_model():
-    '''
     # Get all the model names from Ankiconnect
     response = send_request("modelNames")
     # Convert the result from a JSON string to a dictionary
@@ -152,9 +148,8 @@ def select_model():
     # return the model at the position the user selected
     #return models[model - 1]
     #[DdeR] Hardcoding the model name
-    '''
     return 'LingQ'
-
+'''
 
 # Receives the username and password of the LingQ account,
 # longs into that account, and retrieves all the LingQs the user has
@@ -202,6 +197,7 @@ def retrieve_lingqs(username=ling_user_name, password=ling_password):
 # Allows the user to select which fields in the model to store which LingQ attributes in
 # Receives the model name (By default that would be the basic model) and returns a list of AnkiField
 # objects with each storing the field name and the corresponding LingQ attribute
+'''
 def select_fields(model="Basic"):
     # Get a list of all the fields in the model selected
     response = send_request("modelFieldNames", modelName=model)
@@ -274,8 +270,8 @@ def add_notes(deck, fields, lingqs):
         else:
             print("Error adding LingQ \"" + lingq['term'] + "\":", response["error"])
             lingqs_added -= 1
-    print("Done adding", lingqs_added, " LingQs as notes to", deck, ".")
-
+     print("Done adding", lingqs_added, " LingQs as notes to", deck, ".")
+'''
 
 #LINGQ_ATTRIBUTES = ['term', 'hints', 'fragment', 'notes', 'tags']
 #while True:
@@ -288,30 +284,6 @@ def add_notes(deck, fields, lingqs):
 lingqs = retrieve_lingqs()
     
 '''
-    if not lingqs == 1:
-        break
-    print("Please try logging in again.\n")
-
-version = int(send_request("version").text)
-print("Connected to Ankiconnect version", version)
-
-#Iterate through the available decks that currently exist
-deck = select_deck()
-
-#Iterate through the models that exist (will likely want to createa standard model that can be used and then hardcode)
-model = select_model()
-
-
-fields = select_fields(model)
-add_notes(deck, fields, lingqs)
-
-input("\nPress enter to exit...")
-'''
-
-
-'''
-import pinyin
-
 #example schema return from lingq
 {'extended_status': 3,
  'fragment': '这 是 全 中国 的 一个 传统 吗 ， 还是 主要 是 广东 人 的 这种 传统 ？',
@@ -329,17 +301,6 @@ import pinyin
 term = df[i]['term']
 text = df[i]['hints'][0]['text']
 fragment = df[i]['fragment']
-
-'''
-
-
-'''
-# Assumptions
-
-Deck Name: 'LingQ' 
-Model: 'LingQ'
-
-#then just need to iterate through l
 
 '''
 #Build the front of the card
