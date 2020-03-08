@@ -5,6 +5,8 @@ from getpass import getpass
 import requests
 from requests import RequestException
 
+import pinyin
+
 from config import ling_user_name, ling_password
 
 
@@ -83,6 +85,7 @@ def send_request(action, **params):
               "installed.")
         input("\nPress enter to exit...")
         exit(1)
+    '''
     if not action == 'version' \
             and not json.loads(r.text)["error"] is None \
             and not json.loads(r.text)["error"] == 'cannot create note because it is a duplicate':
@@ -90,6 +93,7 @@ def send_request(action, **params):
         print("\nPlease fix the error above, make sure Anki is running and your preferred profile is selected.")
         input("\nPress enter to exit...")
         exit(1)
+    '''
     return r
 
 
@@ -104,9 +108,10 @@ def create_deck():
 
 # Allows the user to select which deck to add all the LingQs to
 def select_deck():
+    '''
     # Get all the decks at Anki
     response = send_request("deckNames")
-    decks = json.loads(response.text)["result"]
+    decks = json.loads(response.text)#["result"]
     # List all decks, prompt the user to select the deck or add a new deck
     print("Which deck do you want to import the LingQs to?")
     print("1- Create a new deck")
@@ -122,13 +127,17 @@ def select_deck():
         d = create_deck()
     else:
         d = decks[d - 2]
+    
     # Return the name of the selected deck
-    return d
-
+    #return d
+    '''
+    #[DdeR] Hard Coding the deck name TODO: Add to configuration file
+    return "LingQ"
 
 # Allows the user to select which model to add all the LingQs with
 # returns that model's name
 def select_model():
+    '''
     # Get all the model names from Ankiconnect
     response = send_request("modelNames")
     # Convert the result from a JSON string to a dictionary
@@ -141,7 +150,10 @@ def select_model():
     # Allow the user to select the model
     model = select_item_from_list(len(models))
     # return the model at the position the user selected
-    return models[model - 1]
+    #return models[model - 1]
+    #[DdeR] Hardcoding the model name
+    '''
+    return 'LingQ'
 
 
 # Receives the username and password of the LingQ account,
@@ -195,7 +207,7 @@ def select_fields(model="Basic"):
     response = send_request("modelFieldNames", modelName=model)
     # Convert the response from a JSON string to a dictionary and get the result item
     # of that dictionary, which should be a list of all the fields stored in fields_available
-    fields_available = json.loads(response.text)["result"]
+    fields_available = json.loads(response.text)#["result"]
     # Make a list of AnkiField objects and initialize it with all the mFields member variables with
     # items from fields_available
     fields = []
@@ -224,6 +236,11 @@ def select_fields(model="Basic"):
             lingq_attributes_available.pop(lingq_attribute - 2)
         fields_available.pop(field - 1)
         print()
+
+    #field should be a list of type AnkiField -> .mField (Anki Field e.g.
+    #'Front' or 'Back'), .mCorrespondingLingqAttribute (dictionary key of Lingq
+    #Attributes)
+
     return fields
 
 
@@ -260,20 +277,21 @@ def add_notes(deck, fields, lingqs):
     print("Done adding", lingqs_added, " LingQs as notes to", deck, ".")
 
 
-LINGQ_ATTRIBUTES = ['term', 'hints', 'fragment', 'notes', 'tags']
-while True:
+#LINGQ_ATTRIBUTES = ['term', 'hints', 'fragment', 'notes', 'tags']
+#while True:
     #[DdeR] Hardcoded my own username and password
     #username = input("Enter your LingQ username:\t")
     #password = getpass("Enter your LingQ password:\t")
     #lingqs = retrieve_lingqs(username, password)
     
     #Connect to Lingq API
-    lingqs = retrieve_lingqs()
-
+lingqs = retrieve_lingqs()
+    
+'''
     if not lingqs == 1:
         break
     print("Please try logging in again.\n")
-'''
+
 version = int(send_request("version").text)
 print("Connected to Ankiconnect version", version)
 
@@ -310,7 +328,57 @@ import pinyin
 
 term = df[i]['term']
 text = df[i]['hints'][0]['text']
-fragmet = df[i]['fragment']
+fragment = df[i]['fragment']
 
 '''
 
+
+'''
+# Assumptions
+
+Deck Name: 'LingQ' 
+Model: 'LingQ'
+
+#then just need to iterate through l
+
+'''
+#Build the front of the card
+def build_front(item, reverse = False):
+    if reverse:
+        return item['hints'][0]['text']
+    else:
+        return item['term']
+
+#Build the back of the card
+def build_back(item, reverse = False):
+    if reverse:
+        return item['term']
+    else:
+        return f"{item['hints'][0]['text']}<br>{pinyin.get(item['term'])}"
+
+#Insert the card into Anki via Anki Connect
+def insert(lingqs = lingqs, deck = "LingQ", model="LingQ"):
+    for item in lingqs:
+        try:
+            if item['status'] != 3:
+                #Print the status of the item
+                print(item['term'])
+                
+                #Build both the front and the back of the cards
+                for reverse in [True, False]:
+                    #Build the note
+                    note_info = {'Front': build_front(item, reverse), 
+                                 'Back': build_back(item, reverse)}
+
+                    #Insert the card
+                    send_request("addNote", note={"deckName": deck,
+                            "modelName": model,
+                            "fields": note_info,
+                            "options": {"allowDuplicate": False},
+                            "tags": []})
+
+        #Print any exceptions
+        except Exception as e:
+            print(e)
+
+insert()
