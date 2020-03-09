@@ -6,6 +6,11 @@ import requests
 from requests import RequestException
 
 import pinyin
+import pickle
+
+from tqdm import tqdm
+
+from pprint import pprint
 
 from config import ling_user_name, ling_password
 
@@ -58,6 +63,7 @@ def select_item_from_list(upper_bound, prompt=""):
 # to be sent as a JSON
 def form_request(action, **params):
     # check if the version of Ankiconnect has been set
+    '''
     try:
         version
     except NameError:
@@ -65,7 +71,9 @@ def form_request(action, **params):
         return {'action': action, 'params': params}
     else:
         # If yes, send it
-        return {'action': action, 'params': params, 'version': version}
+    '''
+
+    return {'action': action, 'params': params, 'version': 6}
 
 # sends a request to Ankiconnect containing an action and parameters
 # see all requests available here: https://foosoft.net/projects/anki-connect/index.html#supported-actions
@@ -174,11 +182,10 @@ def retrieve_lingqs(username=ling_user_name, password=ling_password):
     languages = json.loads(response.text)
 
     # Let the user select which language to import
-    '''print("Select the language you would like to import:")
-    for num, language in enumerate(languages, start=1):
-        print(str(num) + "-" + language["title"])
+    #print("Select the language you would like to import:")
+    #for num, language in enumerate(languages, start=1):
+    #    print(str(num) + "-" + language["title"])
     #language = select_item_from_list(len(languages))
-    ''' 
     #[DdeR] Hardcoding language to be Chinese
     language = 3
 
@@ -283,6 +290,7 @@ def add_notes(deck, fields, lingqs):
     #Connect to Lingq API
 lingqs = retrieve_lingqs()
     
+
 '''
 #example schema return from lingq
 {'extended_status': 3,
@@ -301,45 +309,75 @@ lingqs = retrieve_lingqs()
 term = df[i]['term']
 text = df[i]['hints'][0]['text']
 fragment = df[i]['fragment']
-
 '''
+
 #Build the front of the card
-def build_front(item, reverse = False):
-    if reverse:
-        return item['hints'][0]['text']
-    else:
-        return item['term']
+def build_simplified(item):#, reverse = False):i
+    return item['term']
 
 #Build the back of the card
-def build_back(item, reverse = False):
-    if reverse:
-        return item['term']
-    else:
-        return f"{item['hints'][0]['text']}<br>{pinyin.get(item['term'])}"
+def build_pinyin(item):#, reverse = False):
+    return pinyin.get(item['term'], delimiter=' ', format='numerical')
+
+def build_meaning(item):
+    return item['hints'][0]['text']
+
+def get_known_words():
+    with open('known_words.pkl', 'rb') as f:
+        return pickle.load(f)
+
+def update_known_words(known_words):
+    with open('known_words.pkl', 'wb') as f:
+        pickle.dump(known_words, f)
+
+def reset_pickle():
+    with open('known_words.pkl', 'wb') as f:
+        pickle.dump([], f)
+
 
 #Insert the card into Anki via Anki Connect
-def insert(lingqs = lingqs, deck = "LingQ", model="LingQ"):
-    for item in lingqs:
-        try:
-            if item['status'] != 3:
-                #Print the status of the item
-                print(item['term'])
-                
-                #Build both the front and the back of the cards
-                for reverse in [True, False]:
-                    #Build the note
-                    note_info = {'Front': build_front(item, reverse), 
-                                 'Back': build_back(item, reverse)}
+def insert(known_words, lingqs = lingqs, deck = "Hanping Chinese",
+           model="Hanping Chinese Type"):
+    for item in tqdm(lingqs):
+        if item['term'] not in known_words:
+            try:
+                if item['status'] != 3:
+                    #Print the status of the item
+                    #print(item['term'])
+                    
+                    #Build both the front and the back of the cards
+                    #for reverse in [True, False]:
+                        #print(reverse)
+                        #Build the note
+                    note_info = {'Simplified': build_simplified(item),
+                                 'Meaning': build_meaning(item),
+                                 'Pinyin': build_pinyin(item),
+                                 'HanziQuestionEnabler': 'x',
+                                 'Traditional': build_simplified(item),
+                                 'Notes': '',
+                                 'Timestamp': '',
+                                 'PronunciationQuestionEnabler':'',
+                                 'MeaningQuestionEnabler': '',
+                                 'TonesQuestionEnabler':'',
+                                 'ListeningQuestionEnabler':''}
 
-                    #Insert the card
-                    send_request("addNote", note={"deckName": deck,
-                            "modelName": model,
-                            "fields": note_info,
-                            "options": {"allowDuplicate": False},
-                            "tags": []})
+                        #Insert the card
+                    r = send_request("addNote", note={"deckName": deck,
+                                                    "modelName": model,
+                                                    "fields": note_info,
+                                                    "options": {"allowDuplicate": False},
+                                                    "tags": []})
 
-        #Print any exceptions
-        except Exception as e:
-            print(e)
+            #Print any exceptions
+            except Exception as e:
+                print(e)
+                print(item)
 
-insert()
+            known_words.append(item['term'])
+
+    update_known_words(known_words)
+
+known_words = get_known_words()
+insert(known_words = known_words)
+
+send_request("sync")
